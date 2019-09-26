@@ -49,7 +49,41 @@ class ItemViewController: UITableViewController {
         
         
     }
-
+    
+    // MARK : - Ajout nouvel element
+    
+    @IBAction func AjoutNouvelElement(_ sender: UIBarButtonItem) {
+        
+        var textField = UITextField()
+        let alert = UIAlertController(title: "Nouvel élément", message: "", preferredStyle: .alert)
+        let action = UIAlertAction(title: "Ajouter", style: .default) { (alertAction) in
+            // ce qui se passe quand on clique sur 'Ajouter'
+           // self.itemArray.append(textField.text!)
+            
+            
+            //Autre syntaxe possible
+            if textField.text != nil {
+                self.itemArray.append(textField.text!)
+                //on recharge la table pour afficher le nouvel ajout
+                self.tableView.reloadData()
+                print("Succès !")
+            } else {
+                print("impossible d'ajouter l'élément")
+            }
+//            //on recharge la table pour afficher le nouvel ajout
+//            self.tableView.reloadData()
+        }
+        
+        alert.addAction(action)
+        alert.addTextField { (UITextField) in
+            textField = UITextField
+            textField.placeholder = "Tapez ici"
+        }
+        present(alert, animated: true, completion: nil)
+        
+    }
+    
+    
 
 }
 
