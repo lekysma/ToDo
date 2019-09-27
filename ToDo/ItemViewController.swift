@@ -10,10 +10,18 @@ import UIKit
 
 class ItemViewController: UITableViewController {
     var itemArray = ["Genese", "Exode", "Levitique"]
+    
+    // user defaults
+    let defaults = UserDefaults.standard
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
+        
+        // on charge les donnees sauvegardees dans user defaults
+        if let items = defaults.array(forKey: "ItemList") as? [String] {
+            itemArray = items
+        }
     }
     
     //MARK: - Table view data source
@@ -58,20 +66,11 @@ class ItemViewController: UITableViewController {
         let alert = UIAlertController(title: "Nouvel élément", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "Ajouter", style: .default) { (alertAction) in
             // ce qui se passe quand on clique sur 'Ajouter'
-           // self.itemArray.append(textField.text!)
-            
-            
-            //Autre syntaxe possible
-            if textField.text != nil {
-                self.itemArray.append(textField.text!)
-                //on recharge la table pour afficher le nouvel ajout
-                self.tableView.reloadData()
-                print("Succès !")
-            } else {
-                print("impossible d'ajouter l'élément")
-            }
+            self.itemArray.append(textField.text!)
+            // on sauvegarde dans user defaults
+            self.defaults.set(self.itemArray, forKey: "ItemList")
 //            //on recharge la table pour afficher le nouvel ajout
-//            self.tableView.reloadData()
+            self.tableView.reloadData()
         }
         
         alert.addAction(action)
