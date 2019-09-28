@@ -10,30 +10,19 @@ import UIKit
 
 class ItemViewController: UITableViewController {
     var itemArray = [Item]()
-    
-    // user defaults
-    let defaults = UserDefaults.standard
+    // Affiche le chemin d'acces vers le lieu ou on encode nos elements ajoutes
+    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("items.plist")
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        let item1 = Item()
-        item1.title = "Genese"
-        itemArray.append(item1)
-        
-        let item2 = Item()
-        item2.title = "Exode"
-        itemArray.append(item2)
-        
-        let item3 = Item()
-        item3.title = "Levitique"
-        itemArray.append(item3)
+        print(dataFilePath)
         
         // on charge les donnees sauvegardees dans user defaults
-        if let items = defaults.array(forKey: "ItemList") as? [Item] {
-            itemArray = items
-        }
+//        if let items = defaults.array(forKey: "ItemList") as? [Item] {
+//            itemArray = items
+//        }
 
         
     }
@@ -69,8 +58,8 @@ class ItemViewController: UITableViewController {
         
         // on change la propriete 'done' de l'element chaque fois qu'on clique sur celui-ci
         itemArray[indexPath.row].done.toggle()
-        // et on recharge la table pour prendre en compte le changement de propriete
-        tableView.reloadData()
+        // et on sauvegarde
+        sauvegardeElements()
      // petite animation sympa
         tableView.deselectRow(at: indexPath, animated: true)
         
@@ -88,10 +77,8 @@ class ItemViewController: UITableViewController {
             let newItem = Item()
             newItem.title = textField.text!
             self.itemArray.append(newItem)
-            // on sauvegarde dans user defaults
-            self.defaults.set(self.itemArray, forKey: "ItemList")
-//            //on recharge la table pour afficher le nouvel ajout
-            self.tableView.reloadData()
+            // on encode les elements ajoutees
+            self.sauvegardeElements()
         }
         
         alert.addAction(action)
@@ -101,6 +88,19 @@ class ItemViewController: UITableViewController {
         }
         present(alert, animated: true, completion: nil)
         
+    }
+    
+    // MARK: - Data manipulation methods
+    func sauvegardeElements() {
+        let encoder = PropertyListEncoder()
+        do {
+            let data = try encoder.encode(itemArray)
+            try data.write(to: dataFilePath!)
+        } catch {
+            print("Impossible d'encoder les éléments, \(error)")
+        }
+        // on recharge la table pour prendre en compte les nouveaux changements
+        tableView.reloadData()
     }
     
     
