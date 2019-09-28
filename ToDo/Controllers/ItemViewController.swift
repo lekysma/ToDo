@@ -17,12 +17,9 @@ class ItemViewController: UITableViewController {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        print(dataFilePath)
-        
-        // on charge les donnees sauvegardees dans user defaults
-//        if let items = defaults.array(forKey: "ItemList") as? [Item] {
-//            itemArray = items
-//        }
+        print(dataFilePath!)
+        // on charge les elements precedemment sauvegardés
+        chargementElements()
 
         
     }
@@ -101,6 +98,17 @@ class ItemViewController: UITableViewController {
         }
         // on recharge la table pour prendre en compte les nouveaux changements
         tableView.reloadData()
+    }
+    
+    func chargementElements() {
+        if let data = try? Data(contentsOf: dataFilePath!) {
+            let decoder = PropertyListDecoder()
+            do {
+                itemArray = try decoder.decode([Item].self, from: data)
+            } catch {
+                print("Impossible de décoder les éléments, \(error)")
+            }
+        }
     }
     
     

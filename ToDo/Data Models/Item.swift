@@ -8,6 +8,7 @@
 
 import Foundation
 
+// la classe peut etre encodée et décodée dans un dataFilePath
 class Item: Codable{
     var title: String = ""
     var done: Bool = false
