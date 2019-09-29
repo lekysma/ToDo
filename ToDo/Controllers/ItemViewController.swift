@@ -7,19 +7,21 @@
 //
 
 import UIKit
+import CoreData
 
 class ItemViewController: UITableViewController {
     var itemArray = [Item]()
-    // Affiche le chemin d'acces vers le lieu ou on encode nos elements ajoutes
-    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("items.plist")
+    //creation du context pour toutes les operations CRUD
+    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
 
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
         
-        print(dataFilePath!)
+         // Affiche le chemin d'acces vers le lieu ou on encode nos elements ajoutes
+        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         // on charge les elements precedemment sauvegardés
-        chargementElements()
+       // chargementElements()
 
         
     }
@@ -71,8 +73,9 @@ class ItemViewController: UITableViewController {
         let action = UIAlertAction(title: "Ajouter", style: .default) { (alertAction) in
             // ce qui se passe quand on clique sur 'Ajouter'
             
-            let newItem = Item()
+            let newItem = Item(context: self.context)
             newItem.title = textField.text!
+            newItem.done = false
             self.itemArray.append(newItem)
             // on encode les elements ajoutees
             self.sauvegardeElements()
@@ -89,27 +92,25 @@ class ItemViewController: UITableViewController {
     
     // MARK: - Data manipulation methods
     func sauvegardeElements() {
-        let encoder = PropertyListEncoder()
         do {
-            let data = try encoder.encode(itemArray)
-            try data.write(to: dataFilePath!)
+            try context.save()
         } catch {
-            print("Impossible d'encoder les éléments, \(error)")
+            print("Impossible de sauvegarder dans le context, \(error)")
         }
         // on recharge la table pour prendre en compte les nouveaux changements
         tableView.reloadData()
     }
     
-    func chargementElements() {
-        if let data = try? Data(contentsOf: dataFilePath!) {
-            let decoder = PropertyListDecoder()
-            do {
-                itemArray = try decoder.decode([Item].self, from: data)
-            } catch {
-                print("Impossible de décoder les éléments, \(error)")
-            }
-        }
-    }
+//    func chargementElements() {
+//        if let data = try? Data(contentsOf: dataFilePath!) {
+//            let decoder = PropertyListDecoder()
+//            do {
+//                itemArray = try decoder.decode([Item].self, from: data)
+//            } catch {
+//                print("Impossible de décoder les éléments, \(error)")
+//            }
+//        }
+//    }
     
     
 
