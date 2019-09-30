@@ -13,6 +13,13 @@ class ItemViewController: UITableViewController {
     var itemArray = [Item]()
     //creation du context pour toutes les operations CRUD
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    //permet d'associer les items a leur categorie parent
+    var selectedCategory : Categorie? {
+        didSet {
+            //chargement des elements liés a la categorie selectionnee
+            chargementElements()
+        }
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -20,10 +27,6 @@ class ItemViewController: UITableViewController {
         
          // Affiche le chemin d'acces vers le lieu ou on encode nos elements ajoutes
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
-        // on charge les elements precedemment sauvegardés
-        chargementElements()
-
-        
     }
     
     //MARK: - Table view data source
@@ -37,6 +40,7 @@ class ItemViewController: UITableViewController {
         let indexPathRow = itemArray[indexPath.row]
         
         cell.textLabel?.text = indexPathRow.title
+        cell.textLabel?.font = UIFont.italicSystemFont(ofSize: 18)
         
         // en fonction de la propriete 'done' on affiche ou pas le 'checkmark'
         if indexPathRow.done == true {
@@ -78,6 +82,8 @@ class ItemViewController: UITableViewController {
             let newItem = Item(context: self.context)
             newItem.title = textField.text!
             newItem.done = false
+            //categorie parent
+            newItem.parentCategorie = self.selectedCategory
             self.itemArray.append(newItem)
             // on encode les elements ajoutees
             self.sauvegardeElements()
@@ -103,8 +109,16 @@ class ItemViewController: UITableViewController {
         tableView.reloadData()
     }
     //
-    func chargementElements(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+    func chargementElements(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
         
+        let CategoriePredicate = NSPredicate(format: "parentCategorie.name MATCHES %@", selectedCategory!.name!)
+        
+        if let additionalPredicate = predicate {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [CategoriePredicate, additionalPredicate])
+        } else {
+            request.predicate = CategoriePredicate
+        }
+        //
         do {
             itemArray = try context.fetch(request)
             
@@ -124,13 +138,24 @@ extension ItemViewController: UISearchBarDelegate {
         let request: NSFetchRequest<Item> = Item.fetchRequest()
 
         //parametres recherches : l'attribut 'titre' contient le contenu tapé dans la barre de recherche
-        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
         
         // parametres tri des resultats recherchés : 'titre' par ordre croissant
         request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
         
         // ensuite on va chercher les donnees
-        chargementElements(with: request)
+        chargementElements(with: request, predicate: predicate)
+    }
+    
+    //changer ou mettre fin a la recherche
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            // on recharge toutes les donnees
+            chargementElements()
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        }
     }
 }
 
