@@ -21,7 +21,7 @@ class ItemViewController: UITableViewController {
          // Affiche le chemin d'acces vers le lieu ou on encode nos elements ajoutes
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         // on charge les elements precedemment sauvegardés
-       // chargementElements()
+        chargementElements()
 
         
     }
@@ -53,11 +53,13 @@ class ItemViewController: UITableViewController {
     
     // MARK: - Table view delegate
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-       // print(itemArray[indexPath.row])
+//        // pour effacer un element du contexte et de la table, voici la marche a suivre : 1st du context puis de la table
+//        context.delete(itemArray[indexPath.row])
+//        itemArray.remove(at: indexPath.row)
         
         // on change la propriete 'done' de l'element chaque fois qu'on clique sur celui-ci
         itemArray[indexPath.row].done.toggle()
-        // et on sauvegarde
+        // et on sauvegarde (U de CRUD)
         sauvegardeElements()
      // petite animation sympa
         tableView.deselectRow(at: indexPath, animated: true)
@@ -100,19 +102,35 @@ class ItemViewController: UITableViewController {
         // on recharge la table pour prendre en compte les nouveaux changements
         tableView.reloadData()
     }
+    //
+    func chargementElements(with request: NSFetchRequest<Item> = Item.fetchRequest()) {
+        
+        do {
+            itemArray = try context.fetch(request)
+            
+        } catch {
+            print("Erreur dans le chargement des données à partir du contexte, \(error)")
+        }
+        
+        tableView.reloadData()
+    }
     
-//    func chargementElements() {
-//        if let data = try? Data(contentsOf: dataFilePath!) {
-//            let decoder = PropertyListDecoder()
-//            do {
-//                itemArray = try decoder.decode([Item].self, from: data)
-//            } catch {
-//                print("Impossible de décoder les éléments, \(error)")
-//            }
-//        }
-//    }
-    
-    
+}
 
+//MARK: - Search bar functionalities
+extension ItemViewController: UISearchBarDelegate {
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        // en premier, on charge les donnees via une requete
+        let request: NSFetchRequest<Item> = Item.fetchRequest()
+
+        //parametres recherches : l'attribut 'titre' contient le contenu tapé dans la barre de recherche
+        request.predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+        
+        // parametres tri des resultats recherchés : 'titre' par ordre croissant
+        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+        
+        // ensuite on va chercher les donnees
+        chargementElements(with: request)
+    }
 }
 
