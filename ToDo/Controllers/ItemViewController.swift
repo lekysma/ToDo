@@ -65,6 +65,9 @@ class ItemViewController: UITableViewController {
                 try realm.write {
                      // on change la propriete 'done' de l'element chaque fois qu'on clique sur celui-ci
                     item.done.toggle()
+                    
+                    // pour effacer un element le code sera:
+//                    realm.delete(item)
                 }
             } catch {
                 print("Impossible de sauvegarder le changement de proprieté 'done', \(error)")
