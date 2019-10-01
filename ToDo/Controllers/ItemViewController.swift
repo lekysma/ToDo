@@ -7,12 +7,13 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class ItemViewController: UITableViewController {
-    var itemArray = [Item]()
-    //creation du context pour toutes les operations CRUD
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    //on initialise Realm
+    let realm = try! Realm()
+    // variable de type results pour utiliser R de CRUD avec Realm
+    var ToDoItems: Results<Item>?
     //permet d'associer les items a leur categorie parent
     var selectedCategory : Categorie? {
         didSet {
@@ -31,25 +32,25 @@ class ItemViewController: UITableViewController {
     
     //MARK: - Table view data source
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return itemArray.count
+        // si ToDoItems n'est pas nul, on retourne le count, sinon on retourne 1
+        return ToDoItems?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "ItemCell", for: indexPath)
         
-        let indexPathRow = itemArray[indexPath.row]
-        
-        cell.textLabel?.text = indexPathRow.title
-        cell.textLabel?.font = UIFont.italicSystemFont(ofSize: 18)
-        
-        // en fonction de la propriete 'done' on affiche ou pas le 'checkmark'
-        if indexPathRow.done == true {
-            cell.accessoryType = .checkmark
+        if let indexPathRow = ToDoItems?[indexPath.row] {
+            cell.textLabel?.text = indexPathRow.title
+            cell.textLabel?.font = UIFont.italicSystemFont(ofSize: 18)
+            // en fonction de la propriete 'done' on affiche ou pas le 'checkmark'
+            if indexPathRow.done == true {
+                cell.accessoryType = .checkmark
+            } else {
+                cell.accessoryType = .none
+            }
         } else {
-            cell.accessoryType = .none
+            cell.textLabel?.text = "Aucun item ajouté pour l'instant"
         }
-        
-        //cell.accessoryType = .none
         
         return cell
     }
@@ -57,15 +58,21 @@ class ItemViewController: UITableViewController {
     
     // MARK: - Table view delegate
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        // pour effacer un element du contexte et de la table, voici la marche a suivre : 1st du context puis de la table
-//        context.delete(itemArray[indexPath.row])
-//        itemArray.remove(at: indexPath.row)
         
-        // on change la propriete 'done' de l'element chaque fois qu'on clique sur celui-ci
-        itemArray[indexPath.row].done.toggle()
-        // et on sauvegarde (U de CRUD)
-        sauvegardeElements()
-     // petite animation sympa
+        if let item = ToDoItems?[indexPath.row] {
+            do {
+                // on sauvegarde le tout dans Realm
+                try realm.write {
+                     // on change la propriete 'done' de l'element chaque fois qu'on clique sur celui-ci
+                    item.done.toggle()
+                }
+            } catch {
+                print("Impossible de sauvegarder le changement de proprieté 'done', \(error)")
+            }
+        }
+        
+        tableView.reloadData()
+        //petite animation cool
         tableView.deselectRow(at: indexPath, animated: true)
         
     }
@@ -78,15 +85,22 @@ class ItemViewController: UITableViewController {
         let alert = UIAlertController(title: "Nouvel élément", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "Ajouter", style: .default) { (alertAction) in
             // ce qui se passe quand on clique sur 'Ajouter'
+            if let currentCategorie = self.selectedCategory {
+                do {
+                    try self.realm.write {
+                        let newItem = Item()
+                        newItem.title = textField.text!
+                        //pas besoin de proprieté 'done' car la valeur par defaut est deja donnee dans la classe mere
+                        currentCategorie.items.append(newItem)
+                    }
+    
+                } catch {
+                    print("Impossible de sauvegarder dans Realm, \(error)")
+                }
+                self.tableView.reloadData()
+            }
             
-            let newItem = Item(context: self.context)
-            newItem.title = textField.text!
-            newItem.done = false
-            //categorie parent
-            newItem.parentCategorie = self.selectedCategory
-            self.itemArray.append(newItem)
-            // on encode les elements ajoutees
-            self.sauvegardeElements()
+
         }
         
         alert.addAction(action)
@@ -99,63 +113,41 @@ class ItemViewController: UITableViewController {
     }
     
     // MARK: - Data manipulation methods
-    func sauvegardeElements() {
-        do {
-            try context.save()
-        } catch {
-            print("Impossible de sauvegarder dans le context, \(error)")
-        }
-        // on recharge la table pour prendre en compte les nouveaux changements
-        tableView.reloadData()
-    }
-    //
-    func chargementElements(with request: NSFetchRequest<Item> = Item.fetchRequest(), predicate: NSPredicate? = nil) {
+    func chargementElements() {
         
-        let CategoriePredicate = NSPredicate(format: "parentCategorie.name MATCHES %@", selectedCategory!.name!)
-        
-        if let additionalPredicate = predicate {
-            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [CategoriePredicate, additionalPredicate])
-        } else {
-            request.predicate = CategoriePredicate
-        }
-        //
-        do {
-            itemArray = try context.fetch(request)
-            
-        } catch {
-            print("Erreur dans le chargement des données à partir du contexte, \(error)")
-        }
-        
+        // on charge les donnees identifiees par titre, pas d'ordre alphabetique
+        ToDoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: false)
+
         tableView.reloadData()
     }
     
 }
 
 //MARK: - Search bar functionalities
-extension ItemViewController: UISearchBarDelegate {
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        // en premier, on charge les donnees via une requete
-        let request: NSFetchRequest<Item> = Item.fetchRequest()
-
-        //parametres recherches : l'attribut 'titre' contient le contenu tapé dans la barre de recherche
-        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-        
-        // parametres tri des resultats recherchés : 'titre' par ordre croissant
-        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-        
-        // ensuite on va chercher les donnees
-        chargementElements(with: request, predicate: predicate)
-    }
-    
-    //changer ou mettre fin a la recherche
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        if searchBar.text?.count == 0 {
-            // on recharge toutes les donnees
-            chargementElements()
-            DispatchQueue.main.async {
-                searchBar.resignFirstResponder()
-            }
-        }
-    }
-}
+//extension ItemViewController: UISearchBarDelegate {
+//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+//        // en premier, on charge les donnees via une requete
+//        let request: NSFetchRequest<Item> = Item.fetchRequest()
+//
+//        //parametres recherches : l'attribut 'titre' contient le contenu tapé dans la barre de recherche
+//        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
+//
+//        // parametres tri des resultats recherchés : 'titre' par ordre croissant
+//        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
+//
+//        // ensuite on va chercher les donnees
+//        chargementElements(with: request, predicate: predicate)
+//    }
+//
+//    //changer ou mettre fin a la recherche
+//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+//        if searchBar.text?.count == 0 {
+//            // on recharge toutes les donnees
+//            chargementElements()
+//            DispatchQueue.main.async {
+//                searchBar.resignFirstResponder()
+//            }
+//        }
+//    }
+//}
 

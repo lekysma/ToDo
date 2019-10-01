@@ -7,15 +7,15 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 
 class CategorieViewController: UITableViewController {
     
-    //context et tableau contenant les categories
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
-    
-    var categorieArray = [Categorie]()
+    //initialisation de Realm
+    let realm = try! Realm()
+    // variable de type Results qui renferme des objets de classe Categorie
+    var ToDoCategorie: Results<Categorie>?
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,11 +33,11 @@ class CategorieViewController: UITableViewController {
         let alert = UIAlertController(title: "Nouvelle catégorie", message: "", preferredStyle: .alert)
         let action = UIAlertAction(title: "Ajouter", style: .default) { (alertAction) in
             // l'action se passe ici
-            let newCategorie = Categorie(context: self.context)
-            newCategorie.name = CategorieTextField.text
-            self.categorieArray.append(newCategorie)
+            let newCategorie = Categorie()
+            newCategorie.name = CategorieTextField.text!
+            //pas besoin d'ajouter a un tableau avec Realm car la MAJ se fait automatiquement
             
-            self.sauvegardeCategorie()
+            self.sauvegarde(categorie: newCategorie)
         }
         
         alert.addAction(action)
@@ -52,14 +52,20 @@ class CategorieViewController: UITableViewController {
     //MARK: - Table view data source
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return categorieArray.count
+        return ToDoCategorie?.count ?? 1
+        //Autre syntaxe
+//        if categorieArray != nil {
+//            return categorieArray!.count
+//        } else {
+//            return 1
+//        }
     }
     //
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "CategorieCell", for: indexPath)
-        let indexPathRow = categorieArray[indexPath.row]
+        let indexPathRow = ToDoCategorie?[indexPath.row]
         
-        cell.textLabel?.text = indexPathRow.name
+        cell.textLabel?.text = indexPathRow?.name ?? "Aucune catégorie pour le moment !"
         cell.textLabel?.font = UIFont.systemFont(ofSize: 20)
         
         return cell
@@ -76,14 +82,16 @@ class CategorieViewController: UITableViewController {
         let destinationVC = segue.destination as! ItemViewController
         
         if let indexpath = tableView.indexPathForSelectedRow {
-            destinationVC.selectedCategory = categorieArray[indexpath.row]
+            destinationVC.selectedCategory = ToDoCategorie?[indexpath.row]
         }
     }
     
     //MARK: - Data manipulations methods
-    func sauvegardeCategorie() {
+    func sauvegarde(categorie: Categorie) {
         do {
-            try context.save()
+            try realm.write {
+                realm.add(categorie)
+            }
         } catch {
             print("Impossible de sauvegarder la catégorie, \(error)")
         }
@@ -92,13 +100,7 @@ class CategorieViewController: UITableViewController {
     }
     //
     func chargementCategories() {
-        let request: NSFetchRequest<Categorie> = Categorie.fetchRequest()
-        do {
-            categorieArray = try context.fetch(request)
-        } catch {
-            print("Impossible de charger les catégories\(error)")
-        }
-        
+        ToDoCategorie = realm.objects(Categorie.self)
         tableView.reloadData()
     }
     
