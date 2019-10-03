@@ -12,6 +12,7 @@ import RealmSwift
 class Item: Object {
     @objc dynamic var title: String = ""
     @objc dynamic var done: Bool = false
+    @objc dynamic var dateCreated:Date?
     //code relation chaque item a une categorie parent
     var parentCategorie = LinkingObjects(fromType: Categorie.self, property: "items")
 }

@@ -93,6 +93,7 @@ class ItemViewController: UITableViewController {
                     try self.realm.write {
                         let newItem = Item()
                         newItem.title = textField.text!
+                        newItem.dateCreated = Date()
                         //pas besoin de proprieté 'done' car la valeur par defaut est deja donnee dans la classe mere
                         currentCategorie.items.append(newItem)
                     }
@@ -127,30 +128,25 @@ class ItemViewController: UITableViewController {
 }
 
 //MARK: - Search bar functionalities
-//extension ItemViewController: UISearchBarDelegate {
-//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-//        // en premier, on charge les donnees via une requete
-//        let request: NSFetchRequest<Item> = Item.fetchRequest()
-//
-//        //parametres recherches : l'attribut 'titre' contient le contenu tapé dans la barre de recherche
-//        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-//
-//        // parametres tri des resultats recherchés : 'titre' par ordre croissant
-//        request.sortDescriptors = [NSSortDescriptor(key: "title", ascending: true)]
-//
-//        // ensuite on va chercher les donnees
-//        chargementElements(with: request, predicate: predicate)
-//    }
-//
-//    //changer ou mettre fin a la recherche
-//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-//        if searchBar.text?.count == 0 {
-//            // on recharge toutes les donnees
-//            chargementElements()
-//            DispatchQueue.main.async {
-//                searchBar.resignFirstResponder()
-//            }
-//        }
-//    }
-//}
+extension ItemViewController: UISearchBarDelegate {
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+        
+        // code pour afficher et trier donnees recherches. on ne charge pas les resultats alphabetiquement
+        //PS : Pas besoin de charger les donnees avec Realm.
+        ToDoItems = ToDoItems?.filter("title CONTAINS[cd] %@", searchBar.text).sorted(byKeyPath: "dateCreated", ascending: false)
+        //et on recharge la table
+        tableView.reloadData()
+    }
+
+    //changer ou mettre fin a la recherche
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        if searchBar.text?.count == 0 {
+            // on recharge toutes les donnees
+            chargementElements()
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        }
+    }
+}
 
