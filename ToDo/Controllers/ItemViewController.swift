@@ -9,7 +9,7 @@
 import UIKit
 import RealmSwift
 
-class ItemViewController: UITableViewController {
+class ItemViewController: SwipeTableViewController {
     //on initialise Realm
     let realm = try! Realm()
     // variable de type results pour utiliser R de CRUD avec Realm
@@ -37,8 +37,9 @@ class ItemViewController: UITableViewController {
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "ItemCell", for: indexPath)
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         
+        //Apparence de la cellule
         if let indexPathRow = ToDoItems?[indexPath.row] {
             cell.textLabel?.text = indexPathRow.title
             cell.textLabel?.font = UIFont.italicSystemFont(ofSize: 18)
@@ -123,6 +124,21 @@ class ItemViewController: UITableViewController {
         ToDoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: false)
 
         tableView.reloadData()
+    }
+    
+    // MARK: - Gestion de la suppression d'un item via Swipe et Realm
+    override func MajDesCellules(at indexPath: IndexPath) {
+        if let itemASupprimer = ToDoItems?[indexPath.row] {
+            
+            do {
+                try realm.write {
+                    realm.delete(itemASupprimer)
+                    print("Succès ! Item supprimé !")
+                }
+            } catch {
+                print("Impossible de supprimer l'item, \(error)")
+            }
+        }
     }
     
 }

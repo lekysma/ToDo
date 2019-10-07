@@ -10,7 +10,7 @@ import UIKit
 import RealmSwift
 
 
-class CategorieViewController: UITableViewController {
+class CategorieViewController: SwipeTableViewController {
     
     //initialisation de Realm
     let realm = try! Realm()
@@ -62,9 +62,10 @@ class CategorieViewController: UITableViewController {
     }
     //
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "CategorieCell", for: indexPath)
-        let indexPathRow = ToDoCategorie?[indexPath.row]
         
+        let indexPathRow = ToDoCategorie?[indexPath.row]
+        //Apparence de la cellule
+        let cell = super.tableView(tableView, cellForRowAt: indexPath)
         cell.textLabel?.text = indexPathRow?.name ?? "Aucune catégorie pour le moment !"
         cell.textLabel?.font = UIFont.systemFont(ofSize: 20)
         
@@ -103,6 +104,24 @@ class CategorieViewController: UITableViewController {
         ToDoCategorie = realm.objects(Categorie.self)
         tableView.reloadData()
     }
+    
+    //MARK: - gestion de la suppression via Swipe et Realm
+    override func MajDesCellules(at indexPath: IndexPath) {
+        // Optional binding
+        if let CategorieASupprimer = ToDoCategorie?[indexPath.row] {
+            
+            do {
+                try realm.write {
+                    realm.delete(CategorieASupprimer)
+                    print("Catégorie supprimée !")
+                }
+            } catch {
+                print("Impossible de supprimer la categorie, \(error)")
+            }
+            
+        }
+    }
+    
     
     
     
