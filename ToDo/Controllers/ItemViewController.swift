@@ -11,6 +11,9 @@ import RealmSwift
 import ChameleonFramework
 
 class ItemViewController: SwipeTableViewController {
+    
+    @IBOutlet weak var searchBar: UISearchBar!
+    
     //on initialise Realm
     let realm = try! Realm()
     // variable de type results pour utiliser R de CRUD avec Realm
@@ -26,9 +29,40 @@ class ItemViewController: SwipeTableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
-        
-         // Affiche le chemin d'acces vers le lieu ou on encode nos elements ajoutes
-        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+    }
+    
+    //MARK: - Gere l'aspect de la barre de navigation qui devrait avoir la meme couleur que celle de la categorie selectionnee
+    override func viewWillAppear(_ animated: Bool) {
+        if let colorHex = selectedCategory?.cellColor {
+            
+            // verification pour s'assurer que l'application fonctionne parfaitement a ce niveau
+            guard let navBar = navigationController?.navigationBar else {fatalError("La barre de navigation n'est pas présente !")}
+            // on s'assure que le titre de la barre de navigation pour l'item porte le nom de la categorie selectionnee
+            navigationItem.title = selectedCategory?.name
+            
+            if let navBarColor = UIColor(hexString: colorHex) {
+                // on donne a la barre de navigation la meme couleur que celle de la cellule de la categorie selectionnee
+                navBar.barTintColor = navBarColor
+                // on harmonise aussi la couleur de la barre de recherche
+                searchBar.barTintColor = navBarColor
+                // et on donne un constraste au menu 'retour arriere' et 'ajouter un nouvel item'
+                navBar.tintColor = ContrastColorOf(backgroundColor: navBarColor, returnFlat: true)
+                // on donne une couleur harmonisée au titre de la barre de navigation pour les items
+                navBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor: ContrastColorOf(backgroundColor: navBarColor, returnFlat: true)]
+            }
+            
+        }
+    }
+    
+    //MARK: - S'assurer de revenir a la couleur originale de la barre de navigation une fois qu'on quitte la liste d'items
+    override func viewWillDisappear(_ animated: Bool) {
+        if let originalColors = UIColor(hexString: "66OOCC") {
+            //couleur barre de navigation
+            navigationController?.navigationBar.barTintColor = originalColors
+            //couleur des menus 'retour en arriere' et 'nouvel item'
+            navigationController?.navigationBar.tintColor = FlatBlue()
+            // texte barre de navigation
+            navigationController?.navigationBar.largeTitleTextAttributes = [NSAttributedString.Key.foregroundColor: FlatWhite()]        }
     }
     
     //MARK: - Table view data source
