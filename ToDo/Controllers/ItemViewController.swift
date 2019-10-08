@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 class ItemViewController: SwipeTableViewController {
     //on initialise Realm
@@ -43,6 +44,13 @@ class ItemViewController: SwipeTableViewController {
         if let indexPathRow = ToDoItems?[indexPath.row] {
             cell.textLabel?.text = indexPathRow.title
             cell.textLabel?.font = UIFont.italicSystemFont(ofSize: 18)
+            
+            //on s'assure de rendre chaque cellule succesivement plus sombre et qui herite de la couleur de sa categorie
+            if let color = UIColor(hexString: selectedCategory?.cellColor).darken(byPercentage:CGFloat(indexPath.row) / CGFloat(ToDoItems!.count)) {
+                cell.backgroundColor = color
+                // on donne un contraste a la couleur du texte en fonction de la couleur de la cellule
+                cell.textLabel?.textColor = ContrastColorOf(backgroundColor: color, returnFlat: true)
+            }
             // en fonction de la propriete 'done' on affiche ou pas le 'checkmark'
             if indexPathRow.done == true {
                 cell.accessoryType = .checkmark

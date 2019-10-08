@@ -16,6 +16,9 @@ class SwipeTableViewController: UITableViewController, SwipeTableViewCellDelegat
         
         // on change la taille des cellules pour tous les VC enfants
         tableView.rowHeight = 80.0
+        
+        // on enleve le separateur entre les cellules pour tous les VC enfants
+        tableView.separatorStyle = .none
     }
 
     // MARK: - Table view data source

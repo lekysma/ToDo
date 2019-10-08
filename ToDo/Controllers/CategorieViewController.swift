@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import ChameleonFramework
 
 
 class CategorieViewController: SwipeTableViewController {
@@ -36,7 +37,8 @@ class CategorieViewController: SwipeTableViewController {
             let newCategorie = Categorie()
             newCategorie.name = CategorieTextField.text!
             //pas besoin d'ajouter a un tableau avec Realm car la MAJ se fait automatiquement
-            
+            //
+            newCategorie.cellColor = (UIColor.randomFlat()?.hexValue())!
             self.sauvegarde(categorie: newCategorie)
         }
         
@@ -68,6 +70,8 @@ class CategorieViewController: SwipeTableViewController {
         let cell = super.tableView(tableView, cellForRowAt: indexPath)
         cell.textLabel?.text = indexPathRow?.name ?? "Aucune catégorie pour le moment !"
         cell.textLabel?.font = UIFont.systemFont(ofSize: 20)
+        //couleur cellule
+        cell.backgroundColor = UIColor(hexString: indexPathRow?.cellColor)
         
         return cell
     }
